@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏙️ SmartCity — Voronoi Urban Planner ✨</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#0f0c29;
+  --bg2:#302b63;
+  --bg3:#24243e;
+  --card:rgba(255,255,255,0.08);
+  --card2:rgba(255,255,255,0.12);
+  --border:rgba(255,255,255,0.15);
+  --text:#f8f9ff;
+  --muted:#a5a6c5;
+  --accent:#7c5cff;
+  --accent2:#00d2ff;
+  --green:#1dd1a1;
+  --pink:#f368e0;
+  --yellow:#feca57;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Outfit',system-ui,sans-serif;
+  background: radial-gradient(1200px 800px at 10% 10%, #7c5cff33, transparent),
+              radial-gradient(1000px 600px at 90% 20%, #00d2ff33, transparent),
+              radial-gradient(800px 600px at 50% 90%, #f368e033, transparent),
+              linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif}
+.app{max-width:1600px;margin:0 auto;padding:18px 18px 40px}
+
+/* header */
+.header{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:12px;padding:18px 22px;
+  background:linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+  border:1px solid var(--border);border-radius:20px;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  position:sticky;top:12px;z-index:20;
+}
+.header-left{display:flex;align-items:center;gap:14px}
+.logo{
+  width:54px;height:54px;border-radius:14px;
+  background:linear-gradient(135deg,#7c5cff,#00d2ff);
+  display:grid;place-items:center;font-size:28px;
+  box-shadow:0 8px 20px #7c5cff55;
+  animation: floaty 3s ease-in-out infinite;
+}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.header h1{font-size:clamp(18px,2.2vw,26px);line-height:1.1;letter-spacing:-0.02em}
+.header h1 span{background:linear-gradient(90deg,#fff,#a5b4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--muted);font-size:13px;margin-top:3px}
+.header-actions{display:flex;gap:10px;flex-wrap:wrap}
+.pill{
+  padding:9px 14px;border-radius:999px;
+  background:var(--card);border:1px solid var(--border);
+  font-size:13px;font-weight:600;cursor:pointer;
+  transition:.2s;backdrop-filter:blur(10px);
+}
+.pill:hover{transform:translateY(-1px);background:var(--card2)}
+.pill.primary{background:linear-gradient(135deg,#7c5cff,#5f27cd);border-color:transparent;box-shadow:0 8px 18px #7c5cff44}
+.pill.active{outline:2px solid #fff;}
+
+/* layout */
+.layout{
+  display:grid;
+  grid-template-columns:300px 1fr 300px;
+  gap:16px;margin-top:18px;
+}
+@media(max-width:1200px){.layout{grid-template-columns:280px 1fr}.stats-panel{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:16px}}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.header{top:0;border-radius:0 0 20px 20px}.app{padding:0 0 30px}.header,.panel,.canvas-wrap{margin:0 12px}.canvas-wrap{margin-top:12px}}
+
+.panel{
+  background:linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
+  border:1px solid var(--border);
+  border-radius:20px;
+  backdrop-filter: blur(16px);
+  box-shadow:0 16px 40px rgba(0,0,0,0.25);
+  padding:16px;
+  height:fit-content;
+}
+.panel h3{font-size:14px;letter-spacing:0.08em;text-transform:uppercase;color:#c8c9ff;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+
+.facility-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fac-btn{
+  padding:10px 8px;border-radius:14px;
+  background:rgba(255,255,255,0.06);border:1px solid transparent;
+  cursor:pointer;text-align:center;transition:.18s;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.fac-btn .em{font-size:22px}
+.fac-btn .nm{font-size:11px;font-weight:700;letter-spacing:.04em}
+.fac-btn .rg{font-size:10px;color:var(--muted)}
+.fac-btn:hover{transform:translateY(-2px) scale(1.02);background:rgba(255,255,255,0.10)}
+.fac-btn.selected{border-color:#fff;background:linear-gradient(135deg, rgba(124,92,255,0.4), rgba(0,210,255,0.25));box-shadow:0 6px 18px rgba(124,92,255,0.3)}
+
+.mode-row{display:flex;gap:8px}
+.mode-btn{flex:1;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;font-weight:700;font-size:13px;transition:.2s}
+.mode-btn.active{background:#fff;color:#1a1a2e}
+
+.slider-row{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.slider-row label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+input[type=range]{width:100%;accent-color:var(--accent)}
+
+.toggle{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);margin-bottom:8px;cursor:pointer;transition:.15s}
+.toggle:hover{background:rgba(255,255,255,0.08)}
+.toggle span{font-size:13px;font-weight:600}
+.toggle input{width:36px;height:22px;appearance:none;background:#2a2a4a;border-radius:999px;position:relative;transition:.2s;cursor:pointer}
+.toggle input::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:white;border-radius:50%;transition:.2s;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.toggle input:checked{background:linear-gradient(135deg,#7c5cff,#00d2ff)}
+.toggle input:checked::after{left:16px}
+
+.btn{
+  width:100%;padding:12px 14px;border-radius:14px;border:none;
+  font-weight:800;letter-spacing:.02em;font-size:13px;
+  cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.btn:active{transform:translateY(0)}
+.btn-ghost{background:rgba(255,255,255,0.08);color:var(--text);border:1px solid var(--border)}
+.btn-primary{background:linear-gradient(135deg,#7c5cff,#00d2ff);color:white;box-shadow:0 10px 24px #7c5cff55}
+.btn-pink{background:linear-gradient(135deg,#f368e0,#ff9f43);color:white}
+.btn-green{background:linear-gradient(135deg,#1dd1a1,#10ac84);color:white}
+
+.canvas-wrap{
+  position:relative;border-radius:22px;overflow:hidden;
+  background: radial-gradient(600px 400px at 30% 30%, #ffffff08, transparent),
+              linear-gradient(180deg,#14142b,#0e0e22);
+  border:1px solid var(--border);
+  box-shadow:0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  min-height:620px;
+  display:flex;flex-direction:column;
+}
+.canvas-top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:rgba(0,0,0,0.25);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(10px);
+}
+.canvas-top .hint{font-size:12px;color:var(--muted)}
+.canvas-top .coords{font-family:'Space Grotesk',monospace;font-size:12px;background:rgba(255,255,255,0.08);padding:6px 10px;border-radius:999px;border:1px solid var(--border)}
+#cityCanvas{width:100%;height:100%;display:block;flex:1;cursor:crosshair}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;background:rgba(255,255,255,0.07);padding:6px 10px;border-radius:999px;border:1px solid var(--border)}
+.dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 10px currentColor}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{
+  padding:12px;border-radius:14px;background:rgba(255,255,255,0.06);border:1px solid var(--border);
+}
+.stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.stat .v{font-size:20px;font-weight:800;margin-top:4px;font-family:'Space Grotesk'}
+.stat .v small{font-size:12px;font-weight:600;color:var(--muted)}
+.progress{height:6px;background:rgba(255,255,255,0.1);border-radius:999px;overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,#7c5cff,#00d2ff);border-radius:999px;transition:.6s}
+
+.toast-container{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{
+  background:rgba(20,20,35,0.9);border:1px solid var(--border);backdrop-filter:blur(16px);
+  padding:10px 16px;border-radius:999px;font-size:13px;font-weight:700;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+  animation: toastIn .4s cubic-bezier(.175,.885,.32,1.275);
+}
+@keyframes toastIn{from{transform:translateY(20px) scale(.9);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+
+.how{font-size:12px;line-height:1.6;color:var(--muted)}
+.how b{color:var(--text)}
+.kbd{display:inline-block;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,0.12);border:1px solid var(--border);font-family:'Space Grotesk',monospace;font-size:11px}
+
+.voronoi-watermark{
+  position:absolute;right:14px;bottom:12px;
+  font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:.15em;text-transform:uppercase;
+  background:rgba(0,0,0,0.3);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.08)
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">🏙️</div>
+      <div>
+        <h1><span>SmartCity: Voronoi-Based Urban Facility Planner</span> ✨</h1>
+        <p>📍 Click to place facilities • 🏘️ Voronoi cells show who serves who • 🚀 Build the happiest city!</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="pill" id="btnRandom">🎲 Random City</button>
+      <button class="pill" id="btnClear">🧹 Clear</button>
+      <button class="pill primary" id="btnExport">📸 Export PNG</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- LEFT PANEL -->
+    <div class="panel">
+      <h3>🏗️ Facility Type</h3>
+      <div class="facility-grid" id="facilityGrid"></div>
+
+      <div class="divider"></div>
+      <h3>🎮 Build Mode</h3>
+      <div class="mode-row">
+        <button class="mode-btn active" data-mode="facility">🏢 Facility</button>
+        <button class="mode-btn" data-mode="house">🏠 Houses</button>
+      </div>
+      <div class="slider-row">
+        <label><span>🏘️ House Density</span><span id="densityVal">120</span></label>
+        <input type="range" id="density" min="20" max="300" value="120" step="10">
+      </div>
+
+      <div class="divider"></div>
+      <h3>👁️ View Layers</h3>
+      <label class="toggle"><span>🌈 Voronoi Cells</span><input type="checkbox" id="tVoronoi" checked></label>
+      <label class="toggle"><span>🔺 Delaunay Links</span><input type="checkbox" id="tDelaunay"></label>
+      <label class="toggle"><span>⭕ Service Radius</span><input type="checkbox" id="tRadius" checked></label>
+      <label class="toggle"><span>🔥 Distance Heatmap</span><input type="checkbox" id="tHeatmap"></label>
+      <label class="toggle"><span>🏷️ Labels & Emojis</span><input type="checkbox" id="tLabels" checked></label>
+      <label class="toggle"><span>🚶 Animate Citizens</span><input type="checkbox" id="tAnimate"></label>
+
+      <div class="divider"></div>
+      <button class="btn btn-primary" id="btnOptimize">✨ Auto-Optimize City 🤖</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost" id="btnAddHouses">➕ Add 30 Random Houses 🏘️</button>
+
+      <div class="divider"></div>
+      <div class="how">
+        <b>💡 How Voronoi works:</b><br>
+        Every point in city belongs to its <b>nearest facility</b>! The colored regions are Voronoi cells. 🎨<br><br>
+        <span class="kbd">Click</span> to place • <span class="kbd">Drag</span> to move • <span class="kbd">Right Click</span> to remove • <span class="kbd">Double Click</span> adds 🏛️ City Hall
+      </div>
+    </div>
+
+    <!-- CANVAS -->
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="canvas-top">
+        <div class="hint" id="hint">🖱️ Selected: <b>🏥 Hospital</b> — Click anywhere to place!</div>
+        <div class="coords" id="coords">📍 x: 0, y: 0 • 🏙️ Ready</div>
+      </div>
+      <canvas id="cityCanvas" width="1000" height="700"></canvas>
+      <div class="voronoi-watermark">⚡ Voronoi • Delaunay • Real-time • Fun Edition 🎉</div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel stats-panel">
+      <div>
+        <h3>📊 City Stats</h3>
+        <div class="stat-grid">
+          <div class="stat"><div class="k">🏢 Facilities</div><div class="v" id="sFac">0</div></div>
+          <div class="stat"><div class="k">🏘️ Population</div><div class="v" id="sPop">0 <small>houses</small></div></div>
+          <div class="stat"><div class="k">📏 Avg Distance</div><div class="v" id="sAvg">0<small>m</small></div><div class="progress"><i id="pAvg" style="width:0%"></i></div></div>
+          <div class="stat"><div class="k">✅ Coverage</div><div class="v" id="sCov">0<small>%</small></div><div class="progress"><i id="pCov" style="width:0%"></i></div></div>
+          <div class="stat"><div class="k">😊 Happiness</div><div class="v" id="sHappy">0<small>%</small></div><div class="progress"><i id="pHappy" style="width:0%"></i></div></div>
+          <div class="stat"><div class="k">⚡ Efficiency</div><div class="v" id="sEff">0<small>%</small></div><div class="progress"><i id="pEff" style="width:0%"></i></div></div>
+        </div>
+
+        <div class="divider"></div>
+        <h3>🗺️ Legend & Breakdown</h3>
+        <div class="legend" id="legend"></div>
+        <div style="margin-top:12px" id="breakdown"></div>
+
+        <div class="divider"></div>
+        <h3>🏆 Achievements</h3>
+        <div id="achievements" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <div style="margin-top:16px">
+        <h3>🎨 Fun Tools</h3>
+        <button class="btn btn-pink" id="btnParty">🎉 Party Mode (Confetti) 🎊</button>
+        <div style="height:8px"></div>
+        <button class="btn btn-green" id="btnNight">🌃 Toggle Night Lights 🌙</button>
+        <div class="divider"></div>
+        <div class="how">
+          <b>🧠 Urban Insight:</b><br>
+          <span id="insight">Place a hospital to start! 🏥</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const FACILITIES = {
+  hospital:{emoji:'🏥', name:'Hospital', color:'#FF6B6B', color2:'#ff8e8e', range:160, cost:5},
+  school:{emoji:'🏫', name:'School', color:'#4ECDC4', color2:'#7ee8e1', range:130, cost:3},
+  fire:{emoji:'🚒', name:'Fire Stn', color:'#FF9F1C', color2:'#ffbe5c', range:170, cost:4},
+  police:{emoji:'🚓', name:'Police', color:'#5F27CD', color2:'#8a5cff', range:150, cost:4},
+  park:{emoji:'🌳', name:'Park', color:'#1DD1A1', color2:'#6ef0c8', range:110, cost:2},
+  mall:{emoji:'🛍️', name:'Mall', color:'#F368E0', color2:'#ff9be8', range:120, cost:3},
+  hall:{emoji:'🏛️', name:'City Hall', color:'#FECA57', color2:'#ffe9a8', range:200, cost:10},
+};
+
+const FAC_ORDER = ['hospital','school','fire','police','park','mall','hall'];
+
+let state = {
+  selected:'hospital',
+  mode:'facility',
+  houses:[],
+  sites:[], // {x,y,type,id}
+  drag:null,
+  mouse:{x:0,y:0,down:false},
+  toggles:{voronoi:true,delaunay:false,radius:true,heatmap:false,labels:true,animate:false,night:false},
+  animPhase:0,
+  voronoiCache:null,
+  voronoiDirty:true,
+  citizens:[]
+};
+
+const canvas = document.getElementById('cityCanvas');
+const ctx = canvas.getContext('2d');
+let W = canvas.width, H = canvas.height;
+let dpr = window.devicePixelRatio||1;
+
+/* ================= UTILS ================= */
+function hexToRgb(hex){const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return {r,g,b}}
+function lerp(a,b,t){return a+(b-a)*t}
+function dist2(ax,ay,bx,by){const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy}
+function rand(min,max){return Math.random()*(max-min)+min}
+function toast(msg, emoji='✨'){
+  const c=document.getElementById('toasts');
+  const el=document.createElement('div');
+  el.className='toast';
+  el.textContent=`${emoji} ${msg}`;
+  c.appendChild(el);
+  setTimeout(()=>{el.style.transition='all .4s';el.style.transform='translateY(-10px)';el.style.opacity='0';setTimeout(()=>el.remove(),400)},2500);
+}
+function resizeCanvas(){
+  const wrap=document.getElementById('canvasWrap');
+  const rect=wrap.getBoundingClientRect();
+  const topBar=46;
+  const availH = Math.max(500, window.innerHeight - 160);
+  const cssW = wrap.clientWidth;
+  const cssH = Math.min(720, Math.max(520, availH));
+  // keep internal resolution high but manageable
+  const scale = window.innerWidth<800?1:1;
+  W = Math.floor(cssW*scale);
+  H = Math.floor(cssH*scale);
+  canvas.width=W;
+  canvas.height=H;
+  canvas.style.height=cssH+'px';
+  state.voronoiDirty=true;
+}
+window.addEventListener('resize',()=>{resizeCanvas(); draw();});
+
+/* ================= UI BUILD ================= */
+function buildFacilityUI(){
+  const grid=document.getElementById('facilityGrid');
+  grid.innerHTML='';
+  FAC_ORDER.forEach(k=>{
+    const f=FACILITIES[k];
+    const b=document.createElement('button');
+    b.className='fac-btn'+(state.selected===k?' selected':'');
+    b.innerHTML=`<div class="em">${f.emoji}</div><div class="nm">${f.name}</div><div class="rg">${f.range}m</div>`;
+    b.style.borderColor=f.color+'66';
+    b.onclick=()=>{
+      state.selected=k;
+      document.querySelectorAll('.fac-btn').forEach(x=>x.classList.remove('selected'));
+      b.classList.add('selected');
+      document.getElementById('hint').innerHTML=`🖱️ Selected: <b>${f.emoji} ${f.name}</b> — Click anywhere to place!`;
+      toast(`Selected ${f.name}!`, f.emoji);
+    };
+    grid.appendChild(b);
+  });
+  // legend
+  const leg=document.getElementById('legend');
+  leg.innerHTML='';
+  FAC_ORDER.forEach(k=>{
+    const f=FACILITIES[k];
+    const el=document.createElement('div');
+    el.className='legend-item';
+    el.innerHTML=`<div class="dot" style="background:${f.color};color:${f.color}"></div>${f.emoji} ${f.name}`;
+    leg.appendChild(el);
+  });
+}
+buildFacilityUI();
+
+/* toggles */
+document.getElementById('tVoronoi').onchange=e=>{state.toggles.voronoi=e.target.checked;state.voronoiDirty=true;draw();}
+document.getElementById('tDelaunay').onchange=e=>{state.toggles.delaunay=e.target.checked;draw();}
+document.getElementById('tRadius').onchange=e=>{state.toggles.radius=e.target.checked;draw();}
+document.getElementById('tHeatmap').onchange=e=>{state.toggles.heatmap=e.target.checked;state.voronoiDirty=true;draw();}
+document.getElementById('tLabels').onchange=e=>{state.toggles.labels=e.target.checked;draw();}
+document.getElementById('tAnimate').onchange=e=>{state.toggles.animate=e.target.checked; if(e.target.checked) requestAnimationFrame(animLoop);}
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.mode=btn.dataset.mode;
+    toast(`Mode: ${state.mode}`, state.mode==='facility'?'🏢':'🏠');
+  }
+});
+document.getElementById('density').oninput=e=>{
+  document.getElementById('densityVal').textContent=e.target.value;
+};
+
+/* ================= CITY LOGIC ================= */
+function addSite(x,y,type){
+  const id=Math.random().toString(36).slice(2,8);
+  state.sites.push({x,y,type,id,emoji:FACILITIES[type].emoji});
+  state.voronoiDirty=true;
+  // add some citizens for animation
+  for(let i=0;i<3;i++) state.citizens.push({x:rand(0,W),y:rand(0,H),tx:x,ty:y,progress:Math.random(),speed:rand(0.003,0.008),emoji:Math.random()>0.5?'🚶':'🚶‍♀️'});
+  updateStats();
+  draw();
+  toast(`${FACILITIES[type].name} placed!`, FACILITIES[type].emoji);
+  checkAchievements();
+}
+function addHouse(x,y){
+  state.houses.push({x,y, id:Math.random().toString(36).slice(2)});
+  state.voronoiDirty=true;
+  updateStats();
+  draw();
+}
+function addRandomHouses(n){
+  const dens=parseInt(document.getElementById('density').value);
+  const count=n||dens;
+  for(let i=0;i<count;i++){
+    // cluster around center a bit
+    const cx=W*0.5 + (Math.random()-0.5)*W*0.9;
+    const cy=H*0.5 + (Math.random()-0.5)*H*0.9;
+    addHouse(cx,cy);
+  }
+  toast(`Added ${count} houses! 🏘️`,`🏠`);
+}
+function randomCity(){
+  state.sites=[];state.houses=[];state.citizens=[];
+  const facCount=6+Math.floor(Math.random()*4);
+  for(let i=0;i<facCount;i++){
+    const type=FAC_ORDER[Math.floor(Math.random()*FAC_ORDER.length)];
+    addSite(rand(W*0.1,W*0.9), rand(H*0.15,H*0.85), type);
+  }
+  // avoid double addSite clearing citizens duplication? addSite already adds citizens, okay
+  state.citizens=[]; // reset after loop to not overpopulate
+  for(let i=0;i<8;i++) state.citizens.push({x:rand(0,W),y:rand(0,H),tx:rand(0,W),ty:rand(0,H),progress:Math.random(),speed:rand(0.002,0.006),emoji:['🚶','🚶‍♀️','🚴','🛴'][Math.floor(Math.random()*4)]});
+  addRandomHouses(140+Math.floor(Math.random()*80));
+  toast('Random city generated! 🏙️','🎲');
+  launchConfetti(80);
+}
+function clearCity(){
+  state.sites=[];state.houses=[];state.citizens=[];state.voronoiDirty=true;
+  updateStats();draw();
+  toast('City cleared! Fresh start 🌅','🧹');
+}
+function optimizeCity(){
+  if(state.sites.length===0){toast('Add at least 1 facility first!','⚠️');return;}
+  // simple k-means like: move facilities to centroid of their Voronoi houses
+  const assignments = assignHouses();
+  state.sites.forEach((s,idx)=>{
+    const myHouses = state.houses.filter((h,i)=>assignments[i]===idx);
+    if(myHouses.length>0){
+      const avgX = myHouses.reduce((a,b)=>a+b.x,0)/myHouses.length;
+      const avgY = myHouses.reduce((a,b)=>a+b.y,0)/myHouses.length;
+      s.x = lerp(s.x, avgX, 0.6);
+      s.y = lerp(s.y, avgY, 0.6);
+    }
+  });
+  state.voronoiDirty=true;
+  updateStats();draw();
+  toast('City optimized! Citizens are happier 😊','🤖');
+}
+
+/* assignment for stats */
+function assignHouses(){
+  const ass=[];
+  for(let i=0;i<state.houses.length;i++){
+    let best=-1,bd=Infinity;
+    for(let j=0;j<state.sites.length;j++){
+      const d=dist2(state.houses[i].x,state.houses[i].y,state.sites[j].x,state.sites[j].y);
+      if(d<bd){bd=d;best=j;}
+    }
+    ass.push(best);
+  }
+  return ass;
+}
+
+/* ================= VORONOI CACHE ================= */
+let voronoiCanvas = document.createElement('canvas');
+let voronoiCtx = voronoiCanvas.getContext('2d',{willReadFrequently:true});
+function rebuildVoronoi(){
+  if(!state.toggles.voronoi && !state.toggles.heatmap) return;
+  if(state.sites.length===0){state.voronoiCache=null;return;}
+  voronoiCanvas.width=W;
+  voronoiCanvas.height=H;
+  const step = W*H > 600*1000 ? 3 : 2; // adaptive
+  const w=W, h=H;
+  const imgData = voronoiCtx.createImageData(w,h);
+  const data = imgData.data;
+  const sites = state.sites;
+  const siteRgbs = sites.map(s=>hexToRgb(FACILITIES[s.type].color));
+  // for heatmap, compute max distance for normalization
+  let maxD2=0;
+  if(state.toggles.heatmap){
+    // quick estimate
+    maxD2 = (W*W+H*H)/4;
+  }
+  // brute force per pixel step
+  for(let y=0;y<h;y+=step){
+    for(let x=0;x<w;x+=step){
+      let best=-1,bd=Infinity;
+      for(let i=0;i<sites.length;i++){
+        const d=dist2(x,y,sites[i].x,sites[i].y);
+        if(d<bd){bd=d;best=i;}
+      }
+      if(best===-1) continue;
+      const rgb = siteRgbs[best];
+      // alpha based on mode
+      let alpha = state.toggles.heatmap ? 0.85 : 0.28;
+      let r=rgb.r,g=rgb.g,b=rgb.b;
+      if(state.toggles.heatmap){
+        const norm = Math.min(1, Math.sqrt(bd)/ (Math.sqrt(maxD2)*0.6));
+        // green to red
+        // close = greenish, far = reddish
+        r = Math.floor(lerp(30, 255, norm));
+        g = Math.floor(lerp(200, 60, norm));
+        b = Math.floor(lerp(120, 60, norm));
+        // blend with site color
+        r = Math.floor(lerp(rgb.r, r, 0.6));
+        g = Math.floor(lerp(rgb.g, g, 0.6));
+        b = Math.floor(lerp(rgb.b, b, 0.6));
+      }
+      // fill step block
+      for(let dy=0;dy<step;dy++){
+        for(let dx=0;dx<step;dx++){
+          const yy=y+dy, xx=x+dx;
+          if(yy>=h||xx>=w) continue;
+          const idx=(yy*w+xx)*4;
+          data[idx]=r; data[idx+1]=g; data[idx+2]=b; data[idx+3]=Math.floor(alpha*255);
+        }
+      }
+    }
+  }
+  voronoiCtx.putImageData(imgData,0,0);
+  // draw borders
+  if(!state.toggles.heatmap){
+    voronoiCtx.strokeStyle='rgba(255,255,255,0.18)';
+    voronoiCtx.lineWidth=1;
+    // detect border by scanning step
+    // simplified: draw cell borders using second pass looking at neighbor best
+    // We'll do a quick edge detection: if pixel's nearest differs from right or bottom neighbor, draw line
+    // For speed, scan with step
+    const borderImg = voronoiCtx.getImageData(0,0,w,h);
+    // Use assignment grid low res
+    const assign = new Int16Array(Math.ceil(w/step)*Math.ceil(h/step));
+    let k=0;
+    for(let y=0;y<h;y+=step){
+      for(let x=0;x<w;x+=step){
+        let best=-1,bd=Infinity;
+        for(let i=0;i<sites.length;i++){
+          const d=dist2(x,y,sites[i].x,sites[i].y);
+          if(d<bd){bd=d;best=i;}
+        }
+        assign[k++]=best;
+      }
+    }
+    const cols=Math.ceil(w/step);
+    voronoiCtx.beginPath();
+    for(let row=0;row<Math.ceil(h/step);row++){
+      for(let col=0;col<cols;col++){
+        const idx=row*cols+col;
+        const cur=assign[idx];
+        if(col+1<cols && assign[idx+1]!==cur){
+          const x=(col+1)*step, y=row*step;
+          voronoiCtx.moveTo(x,y); voronoiCtx.lineTo(x,y+step);
+        }
+        if(row+1<Math.ceil(h/step) && assign[idx+cols]!==cur){
+          const x=col*step, y=(row+1)*step;
+          voronoiCtx.moveTo(x,y); voronoiCtx.lineTo(x+step,y);
+        }
+      }
+    }
+    voronoiCtx.stroke();
+  }
+  state.voronoiCache=voronoiCanvas;
+  state.voronoiDirty=false;
+}
+
+/* ================= DELAUNAY ================= */
+function getCircumcircle(ax,ay,bx,by,cx,cy){
+  const d=2*(ax*(by-cy)+bx*(cy-ay)+cx*(ay-by));
+  if(Math.abs(d)<1e-6) return null;
+  const a2=ax*ax+ay*ay, b2=bx*bx+by*by, c2=cx*cx+cy*cy;
+  const ux=(a2*(by-cy)+b2*(cy-ay)+c2*(ay-by))/d;
+  const uy=(a2*(cx-bx)+b2*(ax-cx)+c2*(bx-ax))/d;
+  const r2=dist2(ux,uy,ax,ay);
+  return {x:ux,y:uy,r2};
+}
+function bowyerWatson(points){
+  if(points.length<2) return [];
+  const superSize = Math.max(W,H)*4;
+  const superTri=[
+    {x:W/2, y:-superSize,},
+    {x:-superSize, y:superSize},
+    {x:W+superSize, y:superSize},
+  ];
+  let triangles=[{a:0,b:1,c:2, pts:[superTri[0],superTri[1],superTri[2]]}];
+  // map superTri indices 0,1,2, real points start at 3
+  const allPoints=[...superTri, ...points];
+  for(let pi=3; pi<allPoints.length; pi++){
+    const p=allPoints[pi];
+    const bad=[];
+    for(let ti=0;ti<triangles.length;ti++){
+      const t=triangles[ti];
+      const pa=allPoints[t.a], pb=allPoints[t.b], pc=allPoints[t.c];
+      const cc=getCircumcircle(pa.x,pa.y,pb.x,pb.y,pc.x,pc.y);
+      if(!cc) continue;
+      if(dist2(p.x,p.y,cc.x,cc.y) <= cc.r2+1e-6) bad.push(ti);
+    }
+    const polygon=[];
+    for(let bi of bad){
+      const tri=triangles[bi];
+      const edges=[[tri.a,tri.b],[tri.b,tri.c],[tri.c,tri.a]];
+      for(let e of edges){
+        let shared=false;
+        for(let bj of bad){
+          if(bj===bi) continue;
+          const ot=triangles[bj];
+          const oedges=[[ot.a,ot.b],[ot.b,ot.c],[ot.c,ot.a]];
+          for(let oe of oedges){
+            if((e[0]===oe[0]&&e[1]===oe[1])||(e[0]===oe[1]&&e[1]===oe[0])){shared=true;break;}
+          }
+          if(shared) break;
+        }
+        if(!shared) polygon.push(e);
+      }
+    }
+    // remove bad
+    triangles=triangles.filter((_,i)=>!bad.includes(i));
+    // re-triangulate
+    for(let e of polygon){
+      triangles.push({a:e[0],b:e[1],c:pi});
+    }
+  }
+  // remove triangles that involve super triangle
+  triangles=triangles.filter(t=>t.a>=3 && t.b>=3 && t.c>=3);
+  // convert to points
+  return triangles.map(t=>({
+    p1:allPoints[t.a], p2:allPoints[t.b], p3:allPoints[t.c]
+  }));
+}
+
+/* ================= DRAW ================= */
+function drawGrid(){
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.04)';
+  ctx.lineWidth=1;
+  const gap=32;
+  for(let x=0;x<W;x+=gap){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=gap){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  ctx.restore();
+}
+function drawVoronoi(){
+  if(!state.toggles.voronoi && !state.toggles.heatmap) return;
+  if(state.voronoiDirty) rebuildVoronoi();
+  if(state.voronoiCache){
+    ctx.drawImage(state.voronoiCache,0,0);
+  }
+}
+function drawDelaunay(){
+  if(!state.toggles.delaunay || state.sites.length<2) return;
+  const tris=bowyerWatson(state.sites);
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.22)';
+  ctx.lineWidth=1;
+  ctx.setLineDash([6,6]);
+  tris.forEach(t=>{
+    ctx.beginPath();
+    ctx.moveTo(t.p1.x,t.p1.y);
+    ctx.lineTo(t.p2.x,t.p2.y);
+    ctx.lineTo(t.p3.x,t.p3.y);
+    ctx.closePath();
+    ctx.stroke();
+  });
+  ctx.restore();
+  // draw circumcenters as tiny dots
+  ctx.fillStyle='rgba(255,255,255,0.4)';
+  tris.forEach(t=>{
+    const cc=getCircumcircle(t.p1.x,t.p1.y,t.p2.x,t.p2.y,t.p3.x,t.p3.y);
+    if(cc){ctx.beginPath();ctx.arc(cc.x,cc.y,3,0,Math.PI*2);ctx.fill();}
+  });
+}
+function drawHouses(){
+  ctx.save();
+  state.houses.forEach(h=>{
+    // find nearest
+    let best=-1,bd=Infinity;
+    for(let i=0;i<state.sites.length;i++){
+      const d=dist2(h.x,h.y,state.sites[i].x,state.sites[i].y);
+      if(d<bd){bd=d;best=i;}
+    }
+    const covered = best!==-1 && Math.sqrt(bd) <= (FACILITIES[state.sites[best].type].range);
+    // house dot
+    ctx.beginPath();
+    if(state.toggles.night){
+      ctx.fillStyle= covered ? '#ffe66d' : '#555';
+      ctx.shadowColor= covered ? '#ffe66d' : 'transparent';
+      ctx.shadowBlur= covered ? 8 : 0;
+    } else {
+      ctx.fillStyle= covered ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)';
+    }
+    ctx.arc(h.x,h.y, state.toggles.night?2.5:3.2, 0, Math.PI*2);
+    ctx.fill();
+    // tiny roof
+    if(!state.toggles.night){
+      ctx.fillStyle='rgba(0,0,0,0.2)';
+      ctx.fillRect(h.x-4,h.y-2,8,2);
+    }
+  });
+  ctx.restore();
+}
+function drawSites(){
+  state.sites.forEach((s,idx)=>{
+    const f=FACILITIES[s.type];
+    // service radius
+    if(state.toggles.radius){
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,f.range,0,Math.PI*2);
+      const grad=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,f.range);
+      grad.addColorStop(0, f.color+'33');
+      grad.addColorStop(1, f.color+'05');
+      ctx.fillStyle=grad;
+      ctx.fill();
+      ctx.strokeStyle=f.color+'44';
+      ctx.setLineDash([8,6]);
+      ctx.lineWidth=1.2;
+      ctx.stroke();
+      ctx.restore();
+    }
+    // glow
+    ctx.save();
+    ctx.shadowColor=f.color;
+    ctx.shadowBlur=18;
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,22,0,Math.PI*2);
+    ctx.fillStyle=f.color;
+    ctx.fill();
+    ctx.restore();
+    // inner white
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,20,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.95)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,18,0,Math.PI*2);
+    const g=ctx.createLinearGradient(s.x-18,s.y-18,s.x+18,s.y+18);
+    g.addColorStop(0,f.color2); g.addColorStop(1,f.color);
+    ctx.fillStyle=g;
+    ctx.fill();
+
+    // emoji
+    ctx.font='20px serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(f.emoji, s.x, s.y+1);
+
+    // label
+    if(state.toggles.labels){
+      ctx.save();
+      ctx.font='700 12px Outfit, sans-serif';
+      ctx.textAlign='center';
+      const txt=`${f.name} #${idx+1}`;
+      const tm=ctx.measureText(txt);
+      const pad=8, bw=tm.width+pad*2, bh=18;
+      const lx=s.x, ly=s.y-36;
+      ctx.fillStyle='rgba(15,15,30,0.85)';
+      ctx.strokeStyle='rgba(255,255,255,0.15)';
+      ctx.lineWidth=1;
+      // rounded rect
+      ctx.beginPath();
+      const rx=lx-bw/2, ry=ly-bh/2;
+      ctx.roundRect(rx,ry,bw,bh,9);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle='white';
+      ctx.fillText(txt, lx, ly+1);
+      ctx.restore();
+    }
+  });
+}
+function drawCitizens(){
+  if(!state.toggles.animate) return;
+  state.citizens.forEach(c=>{
+    // move towards target
+    c.progress+=c.speed;
+    if(c.progress>=1){
+      // pick new target: nearest facility or random
+      if(state.sites.length>0 && Math.random()>0.3){
+        const nearest = state.sites.reduce((best,s)=>{
+          const d=dist2(c.x,c.y,s.x,s.y);
+          return d<best.d?{d,s}:best;
+        },{d:Infinity,s:null}).s;
+        if(nearest){c.tx=nearest.x+(Math.random()-0.5)*30; c.ty=nearest.y+(Math.random()-0.5)*30;}
+      } else {
+        c.tx=rand(0,W); c.ty=rand(0,H);
+      }
+      c.progress=0;
+      c.x=c.x; // start stays
+      // swap start to current?
+      c.sx=c.x; c.sy=c.y;
+    }
+    if(c.sx===undefined){c.sx=c.x;c.sy=c.y;}
+    const x=lerp(c.sx,c.tx,c.progress);
+    const y=lerp(c.sy,c.ty,c.progress);
+    c.x=x; c.y=y;
+    ctx.font='14px serif';
+    ctx.fillText(c.emoji, x, y);
+    // trail
+    ctx.beginPath();
+    ctx.arc(x,y,2,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.6)';
+    ctx.fill();
+  });
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // bg
+  const bgGrad=ctx.createLinearGradient(0,0,0,H);
+  bgGrad.addColorStop(0, state.toggles.night ? '#0a0a1a' : '#14142b');
+  bgGrad.addColorStop(1, state.toggles.night ? '#1a1a3a' : '#0e0e22');
+  ctx.fillStyle=bgGrad;
+  ctx.fillRect(0,0,W,H);
+  drawGrid();
+  drawVoronoi();
+  drawDelaunay();
+  drawHouses();
+  drawSites();
+  drawCitizens();
+}
+
+/* ================= STATS ================= */
+function updateStats(){
+  const facCount=state.sites.length;
+  const pop=state.houses.length;
+  document.getElementById('sFac').textContent=facCount;
+  document.getElementById('sPop').innerHTML=`${pop} <small>houses</small>`;
+
+  if(facCount===0 || pop===0){
+    ['sAvg','sCov','sHappy','sEff'].forEach(id=>document.getElementById(id).innerHTML=`0<small>${id==='sAvg'?'m':'%'}</small>`);
+    ['pAvg','pCov','pHappy','pEff'].forEach(id=>document.getElementById(id).style.width='0%');
+    document.getElementById('breakdown').innerHTML='<div class="how">Add facilities & houses to see stats 📈</div>';
+    document.getElementById('insight').textContent= facCount===0 ? 'Place a hospital to start! 🏥' : 'Add houses to populate your city 🏘️';
+    return;
+  }
+  const assign=assignHouses();
+  let totalDist=0, covered=0;
+  const perType={};
+  FAC_ORDER.forEach(k=>perType[k]=0);
+  state.sites.forEach(s=>perType[s.type]++);
+
+  state.houses.forEach((h,i)=>{
+    const si=assign[i];
+    if(si===-1) return;
+    const s=state.sites[si];
+    const d=Math.sqrt(dist2(h.x,h.y,s.x,s.y));
+    totalDist+=d;
+    if(d<=FACILITIES[s.type].range) covered++;
+  });
+  const avg=totalDist/pop;
+  const cov=(covered/pop)*100;
+  const happiness = Math.max(0, 100 - (avg/4)); // heuristic
+  const efficiency = Math.min(100, (cov*0.7 + (facCount>0? (100 - Math.min(100, facCount*8)):0)*0.3));
+
+  document.getElementById('sAvg').innerHTML=`${avg.toFixed(0)}<small>m</small>`;
+  document.getElementById('sCov').innerHTML=`${cov.toFixed(0)}<small>%</small>`;
+  document.getElementById('sHappy').innerHTML=`${happiness.toFixed(0)}<small>%</small>`;
+  document.getElementById('sEff').innerHTML=`${efficiency.toFixed(0)}<small>%</small>`;
+
+  document.getElementById('pAvg').style.width=`${Math.min(100, 100 - avg/3)}%`;
+  document.getElementById('pCov').style.width=`${cov}%`;
+  document.getElementById('pHappy').style.width=`${happiness}%`;
+  document.getElementById('pEff').style.width=`${efficiency}%`;
+
+  // breakdown
+  const breakdown=document.getElementById('breakdown');
+  breakdown.innerHTML='';
+  Object.entries(perType).forEach(([k,v])=>{
+    if(v===0) return;
+    const f=FACILITIES[k];
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.06);margin-bottom:6px';
+    row.innerHTML=`<span style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:${f.color};display:inline-block"></span>${f.emoji} ${f.name}</span><b>${v} ×</b>`;
+    breakdown.appendChild(row);
+  });
+
+  // insight
+  let insight='';
+  if(cov<50) insight=`⚠️ Low coverage! Add more ${FACILITIES[state.selected].name} near dense areas.`;
+  else if(avg>120) insight=`📏 Houses are far! Use 🤖 Auto-Optimize to move facilities to centers.`;
+  else if(happiness>85) insight=`🌟 Amazing city! Your citizens love it! Consider adding parks 🌳 for extra happiness.`;
+  else insight=`👍 Good progress! Try balancing facility types for better efficiency.`;
+  document.getElementById('insight').textContent=insight;
+}
+
+function checkAchievements(){
+  const ach=document.getElementById('achievements');
+  const list=[];
+  if(state.sites.length>=5) list.push('🏅 Urban Planner — 5+ facilities');
+  if(state.houses.length>=100) list.push('🏘️ Metropolis — 100+ houses');
+  if(state.sites.filter(s=>s.type==='park').length>=3) list.push('🌳 Green City — 3+ parks');
+  if(state.sites.length>=3 && state.houses.length>=50){
+    const covText=document.getElementById('sCov').textContent;
+    const cov=parseInt(covText)||0;
+    if(cov>=80) list.push('✅ Well Covered — 80%+ coverage');
+    if(cov>=95) list.push('💎 Perfect Coverage — 95%+!');
+  }
+  const types=new Set(state.sites.map(s=>s.type));
+  if(types.size>=5) list.push('🌈 Diverse City — 5+ facility types');
+  ach.innerHTML=list.map(t=>`<div style="padding:8px 10px;border-radius:10px;background:linear-gradient(135deg, rgba(124,92,255,0.2), rgba(0,210,255,0.15));border:1px solid rgba(255,255,255,0.1);font-size:12px;font-weight:700">✨ ${t}</div>`).join('') || '<div class="how">Build to unlock achievements 🏆</div>';
+}
+
+/* ================= INTERACTION ================= */
+function getPos(e){
+  const rect=canvas.getBoundingClientRect();
+  const scaleX=W/rect.width, scaleY=H/rect.height;
+  const clientX = e.touches?e.touches[0].clientX:e.clientX;
+  const clientY = e.touches?e.touches[0].clientY:e.clientY;
+  return {x:(clientX-rect.left)*scaleX, y:(clientY-rect.top)*scaleY};
+}
+canvas.addEventListener('mousemove', e=>{
+  const p=getPos(e);
+  state.mouse.x=p.x; state.mouse.y=p.y;
+  document.getElementById('coords').textContent=`📍 x:${p.x.toFixed(0)}, y:${p.y.toFixed(0)} • ${state.mode==='facility'?FACILITIES[state.selected].emoji+' '+FACILITIES[state.selected].name:'🏠 House'}`;
+  if(state.drag){
+    state.drag.x=p.x; state.drag.y=p.y;
+    state.voronoiDirty=true;
+    draw(); updateStats();
+  }
+});
+canvas.addEventListener('mousedown', e=>{
+  if(e.button===2){ // right click remove
+    e.preventDefault();
+    const p=getPos(e);
+    // find nearest site within 30px
+    let best=-1,bd=30*30;
+    state.sites.forEach((s,i)=>{
+      const d=dist2(p.x,p.y,s.x,s.y);
+      if(d<bd){bd=d;best=i;}
+    });
+    if(best!==-1){
+      const removed=state.sites.splice(best,1)[0];
+      state.voronoiDirty=true;
+      updateStats();draw();
+      toast(`Removed ${FACILITIES[removed.type].name}`, '🗑️');
+    }
+    return;
+  }
+  const p=getPos(e);
+  // check if clicking on site to drag
+  let hit=null;
+  state.sites.forEach(s=>{
+    if(dist2(p.x,p.y,s.x,s.y)< 26*26) hit=s;
+  });
+  if(hit){
+    state.drag=hit;
+    canvas.style.cursor='grabbing';
+  } else {
+    if(state.mode==='facility'){
+      addSite(p.x,p.y,state.selected);
+    } else {
+      addHouse(p.x,p.y);
+    }
+  }
+});
+window.addEventListener('mouseup',()=>{
+  state.drag=null;
+  canvas.style.cursor='crosshair';
+});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('dblclick',e=>{
+  const p=getPos(e);
+  addSite(p.x,p.y,'hall');
+  launchConfetti(40);
+});
+canvas.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const p=getPos(e);
+  if(state.mode==='facility') addSite(p.x,p.y,state.selected);
+  else addHouse(p.x,p.y);
+},{passive:false});
+
+/* ================= BUTTONS ================= */
+document.getElementById('btnRandom').onclick=randomCity;
+document.getElementById('btnClear').onclick=clearCity;
+document.getElementById('btnOptimize').onclick=optimizeCity;
+document.getElementById('btnAddHouses').onclick=()=>addRandomHouses(30);
+document.getElementById('btnExport').onclick=()=>{
+  const link=document.createElement('a');
+  link.download=`smartcity-voronoi-${Date.now()}.png`;
+  link.href=canvas.toDataURL('image/png');
+  link.click();
+  toast('Exported city image! 📸','💾');
+};
+document.getElementById('btnParty').onclick=()=>{launchConfetti(150); toast('Party time! 🎉 Citizens are celebrating!','🎊');};
+document.getElementById('btnNight').onclick=()=>{
+  state.toggles.night=!state.toggles.night;
+  draw();
+  toast(state.toggles.night?'Night lights ON 🌃':'Day mode ☀️', state.toggles.night?'🌙':'☀️');
+};
+
+/* ================= CONFETTI ================= */
+function launchConfetti(n=100){
+  const confettiCanvas=document.createElement('canvas');
+  confettiCanvas.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:99';
+  document.body.appendChild(confettiCanvas);
+  confettiCanvas.width=window.innerWidth;
+  confettiCanvas.height=window.innerHeight;
+  const cctx=confettiCanvas.getContext('2d');
+  const pieces=[];
+  for(let i=0;i<n;i++) pieces.push({x:Math.random()*confettiCanvas.width,y:-20-Math.random()*200,r:rand(4,8),c:`hsl(${rand(0,360)},100%,60%)`,vx:rand(-3,3),vy:rand(2,6),rot:rand(0,Math.PI*2),vr:rand(-0.2,0.2)});
+  let frame=0;
+  (function loop(){
+    cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    pieces.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr; p.vy+=0.05;
+      cctx.save();
+      cctx.translate(p.x,p.y);
+      cctx.rotate(p.rot);
+      cctx.fillStyle=p.c;
+      cctx.fillRect(-p.r,-p.r,p.r*2,p.r*2);
+      cctx.restore();
+    });
+    frame++;
+    if(frame<180) requestAnimationFrame(loop);
+    else confettiCanvas.remove();
+  })();
+}
+
+/* ================= ANIMATION LOOP ================= */
+function animLoop(){
+  if(!state.toggles.animate) return;
+  state.animPhase+=0.02;
+  draw();
+  requestAnimationFrame(animLoop);
+}
+
+/* ================= INIT ================= */
+resizeCanvas();
+addRandomHouses(90);
+addSite(W*0.3,H*0.4,'hospital');
+addSite(W*0.7,H*0.3,'school');
+addSite(W*0.5,H*0.7,'fire');
+updateStats();
+draw();
+toast('Welcome to SmartCity! 🏙️ Click to build!','👋');
+
+// initial confetti for fun
+setTimeout(()=>launchConfetti(60),800);
+</script>
+</body>
+</html>
